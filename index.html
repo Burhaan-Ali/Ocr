@@ -113,9 +113,12 @@
     opacity: 0; pointer-events: none; transition: opacity 0.2s;
   }
   .modal-overlay.active { opacity: 1; pointer-events: auto; }
-  .modal { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; width: 90%; max-width: 450px; padding: 24px; }
-  .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+  .modal { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; width: 90%; max-width: 600px; padding: 24px; max-height: 85vh; overflow-y: auto; }
+  .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--card-border); padding-bottom: 12px; }
   .modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+
+  .history-timeline { display: flex; flex-direction: column; gap: 12px; margin-top: 14px; }
+  .history-card { background: #0f172a; border: 1px solid var(--card-border); border-radius: 8px; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; }
 </style>
 </head>
 <body>
@@ -124,7 +127,7 @@
   <header>
     <div class="header-title">
       <h1><i class="fa-solid fa-truck-ramp-box"></i> TruckPark Log</h1>
-      <p>Daily Truck Registration & Automatic Multi-Day Counter</p>
+      <p>Daily Truck Registration & Multi-Visit Timeline Tracker</p>
     </div>
     <div class="stats-bar">
       <div class="stat-card">
@@ -132,8 +135,8 @@
         <div class="lbl">Currently Parked</div>
       </div>
       <div class="stat-card">
-        <div class="val" id="stat-registered-today" style="color: var(--primary);">0</div>
-        <div class="lbl">Registered Today</div>
+        <div class="val" id="stat-total-visits" style="color: var(--primary);">0</div>
+        <div class="lbl">Total Registered Visits</div>
       </div>
     </div>
   </header>
@@ -141,7 +144,7 @@
   <div class="layout">
     <div class="card">
       <div class="card-title">
-        <i class="fa-solid fa-plus-circle" style="color: var(--primary);"></i> Register New Truck
+        <i class="fa-solid fa-plus-circle" style="color: var(--primary);"></i> Register Truck Visit
       </div>
       <form id="parkForm">
         <div class="form-group">
@@ -165,7 +168,7 @@
           <textarea id="notes" rows="2" placeholder="Driver contact, cargo details..."></textarea>
         </div>
         <button type="submit" class="btn">
-          <i class="fa-solid fa-square-check"></i> Save Registration
+          <i class="fa-solid fa-square-check"></i> Register Entry
         </button>
       </form>
     </div>
@@ -184,7 +187,7 @@
         <div class="toolbar">
           <div class="search-box">
             <i class="fa-solid fa-magnifying-glass"></i>
-            <input type="text" id="searchInput" placeholder="Search plate or spot..." onkeyup="render()">
+            <input type="text" id="searchInput" placeholder="Search plate number..." onkeyup="render()">
           </div>
           <button class="btn btn-outline btn-sm" onclick="exportData()">
             <i class="fa-solid fa-file-csv"></i> Export CSV
@@ -207,7 +210,7 @@
           </table>
           <div id="emptyState" class="empty-state" style="display: none;">
             <i class="fa-solid fa-truck-field"></i>
-            <p>No trucks registered yet.</p>
+            <p>No trucks found.</p>
           </div>
         </div>
       </div>
@@ -219,7 +222,7 @@
   <div class="modal">
     <div class="modal-header">
       <h3>Truck Exit Confirmation</h3>
-      <i class="fa-solid fa-xmark" style="cursor: pointer;" onclick="closeModal()"></i>
+      <i class="fa-solid fa-xmark" style="cursor: pointer;" onclick="closeModal('checkoutModal')"></i>
     </div>
     <div>
       <p>Checkout plate: <strong id="modalPlate" class="plate-tag"></strong>?</p>
@@ -227,16 +230,30 @@
       <p style="font-size: 0.9rem; color: var(--text-muted);">Total Duration: <strong id="modalDays"></strong></p>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-outline" onclick="closeModal('checkoutModal')">Cancel</button>
       <button class="btn btn-danger" id="confirmCheckoutBtn">Confirm Exit</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="historyModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Lifetime Visit History: <span id="historyPlateTitle" class="plate-tag"></span></h3>
+      <i class="fa-solid fa-xmark" style="cursor: pointer;" onclick="closeModal('historyModal')"></i>
+    </div>
+    <div id="historyTimelineContainer" class="history-timeline"></div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('historyModal')">Close</button>
     </div>
   </div>
 </div>
 
 <script>
   let trucks = JSON.parse(localStorage.getItem('truck_parking_db')) || [
-    { id: 1, plate: 'TRK-482-AA', spot: 'Bay 01', details: 'Red Scania', entryDate: getFormattedDate(-2), status: 'active', notes: 'Driver: John' },
-    { id: 2, plate: 'TRK-109-BB', spot: 'Bay 05', details: 'White Volvo', entryDate: getFormattedDate(0), status: 'active', notes: '' }
+    { id: 1, plate: 'TRK-482-AA', spot: 'Bay 01', details: 'Red Scania', entryDate: '2026-08-01', exitDate: '2026-08-05', status: 'history', notes: 'Visit 1' },
+    { id: 2, plate: 'TRK-482-AA', spot: 'Bay 01', details: 'Red Scania', entryDate: '2026-08-08', exitDate: '2026-08-11', status: 'history', notes: 'Visit 2' },
+    { id: 3, plate: 'TRK-482-AA', spot: 'Bay 03', details: 'Red Scania', entryDate: getFormattedDate(-1), status: 'active', notes: 'Visit 3 (Current)' }
   ];
 
   let currentTab = 'active';
@@ -274,7 +291,7 @@
 
     const existingIndex = trucks.findIndex(t => t.plate === plate && t.status === 'active');
     if (existingIndex !== -1) {
-      alert(`Truck ${plate} is ALREADY registered as active (Spot: ${trucks[existingIndex].spot}).`);
+      alert(`Truck ${plate} is ALREADY registered as active (Spot: ${trucks[existingIndex].spot}). Please exit it before creating a new visit.`);
       return;
     }
 
@@ -302,7 +319,7 @@
     document.getElementById('activeCount').innerText = activeList.length;
     document.getElementById('historyCount').innerText = historyList.length;
     document.getElementById('stat-currently-parked').innerText = activeList.length;
-    document.getElementById('stat-registered-today').innerText = trucks.filter(t => t.entryDate === getFormattedDate(0)).length;
+    document.getElementById('stat-total-visits').innerText = trucks.length;
 
     const list = (currentTab === 'active' ? activeList : historyList).filter(t => 
       t.plate.toLowerCase().includes(searchTerm) || t.spot.toLowerCase().includes(searchTerm)
@@ -323,6 +340,7 @@
           <td><span class="${badgeClass}">Day ${days}</span></td>
           <td>${escapeHtml(truck.details || '-')}</td>
           <td class="actions-cell">
+            <button class="btn btn-outline btn-sm" title="View Full Visit History" onclick="showTruckHistory('${truck.plate}')"><i class="fa-solid fa-clock-rotate-left"></i></button>
             <button class="btn btn-outline btn-sm" onclick="openCheckout(${truck.id})"><i class="fa-solid fa-arrow-right-from-bracket"></i> Exit</button>
             <button class="btn btn-outline btn-sm" style="color:var(--accent-red)" onclick="deleteTruck(${truck.id})"><i class="fa-solid fa-trash"></i></button>
           </td>
@@ -335,12 +353,43 @@
           <td>${truck.exitDate || '-'}</td>
           <td><span class="days-badge">${days} Days</span></td>
           <td class="actions-cell">
+            <button class="btn btn-outline btn-sm" title="View Full Visit History" onclick="showTruckHistory('${truck.plate}')"><i class="fa-solid fa-clock-rotate-left"></i></button>
             <button class="btn btn-outline btn-sm" style="color:var(--accent-red)" onclick="deleteTruck(${truck.id})"><i class="fa-solid fa-trash"></i></button>
           </td>
         `;
       }
       tbody.appendChild(tr);
     });
+  }
+
+  function showTruckHistory(plate) {
+    const visits = trucks.filter(t => t.plate === plate).sort((a,b) => new Date(b.entryDate) - new Date(a.entryDate));
+    const container = document.getElementById('historyTimelineContainer');
+    document.getElementById('historyPlateTitle').innerText = plate;
+    container.innerHTML = '';
+
+    visits.forEach((v, index) => {
+      const days = calculateDays(v.entryDate, v.exitDate);
+      const isCurrent = v.status === 'active';
+      const div = document.createElement('div');
+      div.className = 'history-card';
+      div.innerHTML = `
+        <div>
+          <strong style="color: ${isCurrent ? 'var(--accent-green)' : 'var(--text-main)'}">
+            ${isCurrent ? '🟢 Current Stay' : '⚪ Completed Stay'}
+          </strong>
+          <div style="font-size:0.85rem; color:var(--text-muted); margin-top:4px;">
+            In: <strong>${v.entryDate}</strong> | Out: <strong>${v.exitDate || 'Still Parked'}</strong>
+          </div>
+        </div>
+        <div style="text-align:right;">
+          <span class="days-badge ${isCurrent ? '' : 'warning'}">${days} Days</span>
+        </div>
+      `;
+      container.appendChild(div);
+    });
+
+    document.getElementById('historyModal').classList.add('active');
   }
 
   function openCheckout(id) {
@@ -352,9 +401,8 @@
     document.getElementById('checkoutModal').classList.add('active');
   }
 
-  function closeModal() {
-    document.getElementById('checkoutModal').classList.remove('active');
-    checkoutTargetId = null;
+  function closeModal(modalId) {
+    document.getElementById(modalId).classList.remove('active');
   }
 
   document.getElementById('confirmCheckoutBtn').addEventListener('click', function() {
@@ -365,11 +413,11 @@
       truck.exitDate = getFormattedDate(0);
       saveData();
     }
-    closeModal();
+    closeModal('checkoutModal');
   });
 
   function deleteTruck(id) {
-    if (confirm("Delete this record permanently?")) {
+    if (confirm("Delete this visit record permanently?")) {
       trucks = trucks.filter(t => t.id !== id);
       saveData();
     }

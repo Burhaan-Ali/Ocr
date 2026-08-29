@@ -32,10 +32,10 @@
   .header-title h1 { font-size: 1.5rem; font-weight: 700; display: flex; align-items: center; gap: 10px; }
   .header-title p { color: var(--text-muted); font-size: 0.85rem; margin-top: 2px; }
 
-  .stats-bar { display: flex; gap: 12px; width: 100%; margin-bottom: 20px; }
+  .stats-bar { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; width: 100%; margin-bottom: 20px; }
   .stat-card {
     background: var(--card-bg); border: 1px solid var(--card-border);
-    padding: 12px 16px; border-radius: 8px; text-align: center; flex: 1;
+    padding: 12px 16px; border-radius: 8px; text-align: center;
   }
   .stat-card .val { font-size: 1.4rem; font-weight: 700; color: var(--accent-green); }
   .stat-card .lbl { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
@@ -142,11 +142,15 @@
   <div class="stats-bar">
     <div class="stat-card">
       <div class="val" id="stat-currently-parked">0</div>
-      <div class="lbl">Currently Parked</div>
+      <div class="lbl">Parked</div>
     </div>
     <div class="stat-card">
       <div class="val" id="stat-total-departed" style="color: var(--accent-amber);">0</div>
       <div class="lbl">Departed</div>
+    </div>
+    <div class="stat-card">
+      <div class="val" id="stat-total-visits" style="color: var(--primary);">0</div>
+      <div class="lbl">Total Visits</div>
     </div>
   </div>
 
@@ -191,6 +195,7 @@
   </div>
 </div>
 
+<!-- HISTORY MODAL -->
 <div class="modal-overlay" id="historyModal">
   <div class="modal">
     <div class="modal-header">
@@ -204,6 +209,7 @@
   </div>
 </div>
 
+<!-- ADMIN LOGIN MODAL -->
 <div class="modal-overlay" id="adminLoginModal">
   <div class="modal" style="text-align: center;">
     <i class="fa-solid fa-lock" style="font-size: 2.5rem; color: var(--primary); margin-bottom: 12px;"></i>
@@ -248,7 +254,6 @@
   let trucks = [];
   let currentTab = 'active';
 
-  // LOGIN FLOW TO ADMIN PAGE
   window.openLoginModal = function() {
     if (sessionStorage.getItem('authenticated') === 'true') {
       window.location.href = 'index.html';
@@ -318,10 +323,14 @@
     const activeList = trucks.filter(t => t.status === 'active');
     const historyList = trucks.filter(t => t.status === 'history');
 
+    // STATS FIX: Total Visits = Active Parked + Departed
+    const totalVisitsCount = activeList.length + historyList.length;
+
     document.getElementById('activeCount').innerText = activeList.length;
     document.getElementById('historyCount').innerText = historyList.length;
     document.getElementById('stat-currently-parked').innerText = activeList.length;
     document.getElementById('stat-total-departed').innerText = historyList.length;
+    document.getElementById('stat-total-visits').innerText = totalVisitsCount;
 
     const targetList = currentTab === 'active' ? activeList : historyList;
     const filteredList = targetList.filter(t => {

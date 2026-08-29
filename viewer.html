@@ -9,6 +9,7 @@
 <style>
   :root {
     --primary: #2563eb;
+    --primary-hover: #1d4ed8;
     --bg-dark: #0f172a;
     --card-bg: #1e293b;
     --card-border: #334155;
@@ -44,20 +45,28 @@
     border-radius: 12px; padding: 16px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
   }
 
-  .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; gap: 10px; flex-wrap: wrap; }
-  .search-box { position: relative; flex: 1; min-width: 100%; }
-  @media (min-width: 640px) { .search-box { min-width: 200px; } }
-  .search-box i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); }
-  .search-box input {
+  /* SEARCH BAR STYLING */
+  .toolbar { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+  .search-wrapper { position: relative; flex: 1; width: 100%; }
+  .search-wrapper i.search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 1rem; }
+  .search-wrapper input {
     background: #0f172a; border: 1px solid var(--card-border); color: var(--text-main);
-    padding: 10px 10px 10px 38px; border-radius: 8px; font-size: 0.95rem; width: 100%; outline: none;
+    padding: 10px 36px 10px 42px; border-radius: 8px; font-size: 0.95rem; width: 100%; outline: none; height: 44px;
   }
+  .clear-search {
+    position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+    color: var(--text-muted); cursor: pointer; display: none; font-size: 0.9rem;
+    background: transparent; border: none;
+  }
+  .clear-search:hover { color: var(--text-main); }
+  .clear-search.active { display: block; }
 
   .btn {
-    background: var(--primary); color: white; border: none; padding: 8px 12px;
+    background: var(--primary); color: white; border: none; padding: 8px 14px;
     border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 0.85rem;
-    display: inline-flex; align-items: center; gap: 6px; transition: background 0.2s;
+    display: inline-flex; align-items: center; gap: 6px; text-decoration: none;
   }
+  .btn:hover { background: var(--primary-hover); }
   .btn-outline { background: transparent; border: 1px solid var(--card-border); color: var(--text-main); }
   .btn-outline:hover { background: rgba(255, 255, 255, 0.05); }
 
@@ -100,17 +109,23 @@
   .empty-state i { font-size: 2.5rem; margin-bottom: 12px; opacity: 0.5; }
 
   .modal-overlay {
-    position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8);
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85);
     display: flex; justify-content: center; align-items: center; z-index: 1000;
     opacity: 0; pointer-events: none; transition: opacity 0.2s; padding: 16px;
   }
   .modal-overlay.active { opacity: 1; pointer-events: auto; }
-  .modal { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; width: 100%; max-width: 500px; padding: 20px; max-height: 85vh; overflow-y: auto; }
+  .modal { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; width: 100%; max-width: 440px; padding: 20px; }
   .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid var(--card-border); padding-bottom: 10px; }
   .modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; }
 
   .history-timeline { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
   .history-card { background: #0f172a; border: 1px solid var(--card-border); border-radius: 8px; padding: 12px; display: flex; justify-content: space-between; align-items: center; }
+
+  form { display: flex; flex-direction: column; gap: 12px; }
+  .form-group { display: flex; flex-direction: column; gap: 6px; text-align: left; }
+  label { font-size: 0.8rem; font-weight: 500; color: var(--text-muted); }
+  .error-msg { color: var(--accent-red); font-size: 0.8rem; display: none; margin-top: 4px; }
+  .error-msg.active { display: block; }
 </style>
 </head>
 <body>
@@ -119,8 +134,9 @@
   <header>
     <div class="header-title">
       <h1><i class="fa-solid fa-truck-ramp-box"></i> TruckPark Log</h1>
-      <p>Real-Time Parking Overview</p>
+      <p>Real-Time Parking Dashboard</p>
     </div>
+    <button class="btn btn-outline" onclick="openLoginModal()"><i class="fa-solid fa-user-lock"></i> Admin Login</button>
   </header>
 
   <div class="stats-bar">
@@ -145,9 +161,10 @@
 
   <div class="card">
     <div class="toolbar">
-      <div class="search-box">
-        <i class="fa-solid fa-magnifying-glass"></i>
-        <input type="text" id="searchInput" placeholder="Search plate or spot..." onkeyup="render()">
+      <div class="search-wrapper">
+        <i class="fa-solid fa-magnifying-glass search-icon"></i>
+        <input type="text" id="searchInput" placeholder="Search plate, spot, details, notes, or date..." oninput="handleSearchInput()">
+        <button class="clear-search" id="clearSearchBtn" onclick="clearSearch()"><i class="fa-solid fa-xmark"></i></button>
       </div>
     </div>
 
@@ -168,8 +185,8 @@
     <div class="mobile-cards" id="mobileCardsContainer"></div>
 
     <div id="emptyState" class="empty-state" style="display: none;">
-      <i class="fa-solid fa-truck-field"></i>
-      <p>No records found.</p>
+      <i class="fa-solid fa-magnifying-glass"></i>
+      <p id="emptyStateText">No matching records found.</p>
     </div>
   </div>
 </div>
@@ -178,12 +195,36 @@
   <div class="modal">
     <div class="modal-header">
       <h3>Visit Timeline: <span id="historyPlateTitle" class="plate-tag"></span></h3>
-      <i class="fa-solid fa-xmark" style="cursor: pointer; font-size:1.2rem;" onclick="closeModal()"></i>
+      <i class="fa-solid fa-xmark" style="cursor: pointer;" onclick="closeModal('historyModal')"></i>
     </div>
     <div id="historyTimelineContainer" class="history-timeline"></div>
     <div class="modal-footer">
-      <button class="btn btn-outline" onclick="closeModal()">Close</button>
+      <button class="btn btn-outline" onclick="closeModal('historyModal')">Close</button>
     </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="adminLoginModal">
+  <div class="modal" style="text-align: center;">
+    <i class="fa-solid fa-lock" style="font-size: 2.5rem; color: var(--primary); margin-bottom: 12px;"></i>
+    <h3 style="margin-bottom: 8px;">Admin Login Required</h3>
+    <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 16px;">Enter credentials to open the Admin Page.</p>
+    
+    <form id="adminLoginForm" onsubmit="handleAdminLogin(event)">
+      <div class="form-group">
+        <label>Username</label>
+        <input type="text" id="adminUser" placeholder="Enter username" required>
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="adminPass" placeholder="Enter password" required>
+      </div>
+      <div class="error-msg" id="adminLoginError">Invalid username or password.</div>
+      <div class="modal-footer" style="padding:0; margin-top:10px;">
+        <button type="button" class="btn btn-outline" onclick="closeModal('adminLoginModal')">Cancel</button>
+        <button type="submit" class="btn">Login & Redirect</button>
+      </div>
+    </form>
   </div>
 </div>
 
@@ -206,6 +247,28 @@
 
   let trucks = [];
   let currentTab = 'active';
+
+  // LOGIN FLOW TO ADMIN PAGE
+  window.openLoginModal = function() {
+    if (sessionStorage.getItem('authenticated') === 'true') {
+      window.location.href = 'index.html';
+    } else {
+      document.getElementById('adminLoginModal').classList.add('active');
+    }
+  };
+
+  window.handleAdminLogin = function(e) {
+    e.preventDefault();
+    const user = document.getElementById('adminUser').value;
+    const pass = document.getElementById('adminPass').value;
+
+    if (user === 'admin' && pass === 'parking123') {
+      sessionStorage.setItem('authenticated', 'true');
+      window.location.href = 'index.html';
+    } else {
+      document.getElementById('adminLoginError').classList.add('active');
+    }
+  };
 
   onSnapshot(trucksCollection, (snapshot) => {
     trucks = [];
@@ -231,10 +294,23 @@
     render();
   };
 
+  window.handleSearchInput = function() {
+    const input = document.getElementById('searchInput');
+    document.getElementById('clearSearchBtn').classList.toggle('active', input.value.length > 0);
+    render();
+  };
+
+  window.clearSearch = function() {
+    const input = document.getElementById('searchInput');
+    input.value = '';
+    document.getElementById('clearSearchBtn').classList.remove('active');
+    render();
+  };
+
   function render() {
     const tbody = document.getElementById('tableBody');
     const mobileContainer = document.getElementById('mobileCardsContainer');
-    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const searchTerm = document.getElementById('searchInput').value.trim().toLowerCase();
     
     tbody.innerHTML = '';
     mobileContainer.innerHTML = '';
@@ -247,13 +323,30 @@
     document.getElementById('stat-currently-parked').innerText = activeList.length;
     document.getElementById('stat-total-departed').innerText = historyList.length;
 
-    const list = (currentTab === 'active' ? activeList : historyList).filter(t => 
-      t.plate.toLowerCase().includes(searchTerm) || t.spot.toLowerCase().includes(searchTerm)
-    );
+    const targetList = currentTab === 'active' ? activeList : historyList;
+    const filteredList = targetList.filter(t => {
+      if (!searchTerm) return true;
+      return (
+        (t.plate && t.plate.toLowerCase().includes(searchTerm)) ||
+        (t.spot && t.spot.toLowerCase().includes(searchTerm)) ||
+        (t.details && t.details.toLowerCase().includes(searchTerm)) ||
+        (t.notes && t.notes.toLowerCase().includes(searchTerm)) ||
+        (t.entryDate && t.entryDate.includes(searchTerm)) ||
+        (t.exitDate && t.exitDate.includes(searchTerm))
+      );
+    });
 
-    document.getElementById('emptyState').style.display = list.length === 0 ? 'block' : 'none';
+    const emptyState = document.getElementById('emptyState');
+    if (filteredList.length === 0) {
+      emptyState.style.display = 'block';
+      document.getElementById('emptyStateText').innerText = searchTerm 
+        ? `No results match "${searchTerm}"` 
+        : "No records found in this category.";
+    } else {
+      emptyState.style.display = 'none';
+    }
 
-    list.forEach(truck => {
+    filteredList.forEach(truck => {
       const days = calculateDays(truck.entryDate, truck.exitDate);
       let badgeClass = 'days-badge' + (days > 7 ? ' danger' : days > 3 ? ' warning' : '');
 
@@ -315,9 +408,7 @@
             In: <strong>${v.entryDate}</strong> | Out: <strong>${v.exitDate || 'Parked Now'}</strong>
           </div>
         </div>
-        <div>
-          <span class="days-badge ${isCurrent ? '' : 'warning'}">${days} Days</span>
-        </div>
+        <span class="days-badge ${isCurrent ? '' : 'warning'}">${days} Days</span>
       `;
       container.appendChild(div);
     });
@@ -325,8 +416,8 @@
     document.getElementById('historyModal').classList.add('active');
   };
 
-  window.closeModal = function() {
-    document.getElementById('historyModal').classList.remove('active');
+  window.closeModal = function(id) {
+    document.getElementById(id).classList.remove('active');
   };
 
   function escapeHtml(str) { return str ? str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;") : ''; }

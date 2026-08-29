@@ -50,6 +50,12 @@
   }
   .card-title { font-size: 1rem; font-weight: 600; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
 
+  /* Mobile Section Toggling Logic */
+  .section-view { display: block; }
+  @media (max-width: 899px) {
+    .section-view.hidden-mobile { display: none !important; }
+  }
+
   form { display: flex; flex-direction: column; gap: 12px; }
   .form-group { display: flex; flex-direction: column; gap: 6px; }
   label { font-size: 0.8rem; font-weight: 500; color: var(--text-muted); }
@@ -129,7 +135,7 @@
     padding: 8px 0; z-index: 900;
   }
   @media (min-width: 900px) { .mobile-nav { display: none; } }
-  .nav-item { display: flex; flex-direction: column; align-items: center; gap: 4px; color: var(--text-muted); font-size: 0.7rem; text-decoration: none; border: none; background: transparent; cursor: pointer; }
+  .nav-item { display: flex; flex-direction: column; align-items: center; gap: 4px; color: var(--text-muted); font-size: 0.7rem; text-decoration: none; border: none; background: transparent; cursor: pointer; width: 33%; }
   .nav-item.active { color: var(--primary); }
   .nav-item i { font-size: 1.2rem; }
 
@@ -169,7 +175,7 @@
   </header>
 
   <div class="layout">
-    <div class="card" id="registerSection">
+    <div class="card section-view hidden-mobile" id="registerSection">
       <div class="card-title">
         <i class="fa-solid fa-plus-circle" style="color: var(--primary);"></i> Register Truck Visit
       </div>
@@ -200,7 +206,7 @@
       </form>
     </div>
 
-    <div id="listSection">
+    <div class="section-view" id="listSection">
       <div class="tab-buttons">
         <button class="tab-btn active" id="tabActive" onclick="switchTab('active')">
           <i class="fa-solid fa-truck"></i> Active (<span id="activeCount">0</span>)
@@ -247,15 +253,15 @@
 </div>
 
 <div class="mobile-nav">
-  <button class="nav-item" onclick="scrollToSection('registerSection')">
+  <button class="nav-item" id="navRegisterTab" onclick="showMobileView('register')">
     <i class="fa-solid fa-plus-circle"></i>
     <span>Register</span>
   </button>
-  <button class="nav-item active" id="navActiveTab" onclick="switchTab('active'); scrollToSection('listSection');">
+  <button class="nav-item active" id="navActiveTab" onclick="showMobileView('active')">
     <i class="fa-solid fa-truck"></i>
     <span>Active</span>
   </button>
-  <button class="nav-item" id="navHistoryTab" onclick="switchTab('history'); scrollToSection('listSection');">
+  <button class="nav-item" id="navHistoryTab" onclick="showMobileView('history')">
     <i class="fa-solid fa-clock-rotate-left"></i>
     <span>History</span>
   </button>
@@ -342,7 +348,7 @@
     saveData();
     this.reset();
     document.getElementById('entryDate').value = getFormattedDate(0);
-    scrollToSection('listSection');
+    showMobileView('active');
   });
 
   function switchTab(tab) {
@@ -352,8 +358,26 @@
     render();
   }
 
-  function scrollToSection(id) {
-    document.getElementById(id).scrollIntoView({ behavior: 'smooth' });
+  function showMobileView(view) {
+    const regSec = document.getElementById('registerSection');
+    const listSec = document.getElementById('listSection');
+    
+    document.getElementById('navRegisterTab').classList.toggle('active', view === 'register');
+    document.getElementById('navActiveTab').classList.toggle('active', view === 'active');
+    document.getElementById('navHistoryTab').classList.toggle('active', view === 'history');
+
+    if (view === 'register') {
+      regSec.classList.remove('hidden-mobile');
+      listSec.classList.add('hidden-mobile');
+    } else if (view === 'active') {
+      regSec.classList.add('hidden-mobile');
+      listSec.classList.remove('hidden-mobile');
+      switchTab('active');
+    } else if (view === 'history') {
+      regSec.classList.add('hidden-mobile');
+      listSec.classList.remove('hidden-mobile');
+      switchTab('history');
+    }
   }
 
   function render() {

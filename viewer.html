@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Truck Parking - Viewer Mode</title>
+<title>Truck Parking Dashboard</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
@@ -31,11 +31,6 @@
   .header-title h1 { font-size: 1.5rem; font-weight: 700; display: flex; align-items: center; gap: 10px; }
   .header-title p { color: var(--text-muted); font-size: 0.85rem; margin-top: 2px; }
 
-  .view-badge {
-    background: rgba(37, 99, 235, 0.2); color: #60a5fa; border: 1px solid rgba(37, 99, 235, 0.4);
-    padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
-  }
-
   .stats-bar { display: flex; gap: 12px; width: 100%; margin-bottom: 20px; }
   .stat-card {
     background: var(--card-bg); border: 1px solid var(--card-border);
@@ -58,6 +53,14 @@
     padding: 10px 10px 10px 38px; border-radius: 8px; font-size: 0.95rem; width: 100%; outline: none;
   }
 
+  .btn {
+    background: var(--primary); color: white; border: none; padding: 8px 12px;
+    border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 0.85rem;
+    display: inline-flex; align-items: center; gap: 6px; transition: background 0.2s;
+  }
+  .btn-outline { background: transparent; border: 1px solid var(--card-border); color: var(--text-main); }
+  .btn-outline:hover { background: rgba(255, 255, 255, 0.05); }
+
   .desktop-table { display: none; width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem; }
   @media (min-width: 768px) { .desktop-table { display: table; } }
   th { background: #0f172a; color: var(--text-muted); font-weight: 600; padding: 12px; border-bottom: 1px solid var(--card-border); white-space: nowrap; }
@@ -72,6 +75,7 @@
   }
   .truck-card-header { display: flex; justify-content: space-between; align-items: center; }
   .truck-card-body { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.85rem; color: var(--text-muted); }
+  .truck-card-actions { border-top: 1px solid var(--card-border); padding-top: 10px; display: flex; gap: 8px; }
 
   .plate-tag {
     background: #fbbf24; color: #000; font-family: monospace; font-weight: 700;
@@ -94,6 +98,19 @@
 
   .empty-state { text-align: center; padding: 40px; color: var(--text-muted); }
   .empty-state i { font-size: 2.5rem; margin-bottom: 12px; opacity: 0.5; }
+
+  .modal-overlay {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8);
+    display: flex; justify-content: center; align-items: center; z-index: 1000;
+    opacity: 0; pointer-events: none; transition: opacity 0.2s; padding: 16px;
+  }
+  .modal-overlay.active { opacity: 1; pointer-events: auto; }
+  .modal { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; width: 100%; max-width: 500px; padding: 20px; max-height: 85vh; overflow-y: auto; }
+  .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid var(--card-border); padding-bottom: 10px; }
+  .modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; }
+
+  .history-timeline { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+  .history-card { background: #0f172a; border: 1px solid var(--card-border); border-radius: 8px; padding: 12px; display: flex; justify-content: space-between; align-items: center; }
 </style>
 </head>
 <body>
@@ -101,8 +118,8 @@
 <div class="container">
   <header>
     <div class="header-title">
-      <h1><i class="fa-solid fa-eye"></i> TruckPark Log <span class="view-badge">Read-Only</span></h1>
-      <p>Live View-Only Dashboard</p>
+      <h1><i class="fa-solid fa-truck-ramp-box"></i> TruckPark Log</h1>
+      <p>Real-Time Parking Overview</p>
     </div>
   </header>
 
@@ -112,14 +129,14 @@
       <div class="lbl">Currently Parked</div>
     </div>
     <div class="stat-card">
-      <div class="val" id="stat-total-visits" style="color: var(--primary);">0</div>
-      <div class="lbl">Total Records</div>
+      <div class="val" id="stat-total-departed" style="color: var(--accent-amber);">0</div>
+      <div class="lbl">Departed</div>
     </div>
   </div>
 
   <div class="tab-buttons">
     <button class="tab-btn active" id="tabActive" onclick="switchTab('active')">
-      <i class="fa-solid fa-truck"></i> Active (<span id="activeCount">0</span>)
+      <i class="fa-solid fa-truck"></i> Parked (<span id="activeCount">0</span>)
     </button>
     <button class="tab-btn" id="tabHistory" onclick="switchTab('history')">
       <i class="fa-solid fa-clock-rotate-left"></i> Departed (<span id="historyCount">0</span>)
@@ -142,6 +159,7 @@
           <th>Entry Date</th>
           <th>Duration</th>
           <th>Details</th>
+          <th>History</th>
         </tr>
       </thead>
       <tbody id="tableBody"></tbody>
@@ -152,6 +170,19 @@
     <div id="emptyState" class="empty-state" style="display: none;">
       <i class="fa-solid fa-truck-field"></i>
       <p>No records found.</p>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="historyModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Visit Timeline: <span id="historyPlateTitle" class="plate-tag"></span></h3>
+      <i class="fa-solid fa-xmark" style="cursor: pointer; font-size:1.2rem;" onclick="closeModal()"></i>
+    </div>
+    <div id="historyTimelineContainer" class="history-timeline"></div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal()">Close</button>
     </div>
   </div>
 </div>
@@ -214,7 +245,7 @@
     document.getElementById('activeCount').innerText = activeList.length;
     document.getElementById('historyCount').innerText = historyList.length;
     document.getElementById('stat-currently-parked').innerText = activeList.length;
-    document.getElementById('stat-total-visits').innerText = trucks.length;
+    document.getElementById('stat-total-departed').innerText = historyList.length;
 
     const list = (currentTab === 'active' ? activeList : historyList).filter(t => 
       t.plate.toLowerCase().includes(searchTerm) || t.spot.toLowerCase().includes(searchTerm)
@@ -233,6 +264,11 @@
         <td>${truck.entryDate}</td>
         <td><span class="${badgeClass}">${currentTab === 'active' ? 'Day ' + days : days + ' Days'}</span></td>
         <td>${escapeHtml(truck.details || '-')}</td>
+        <td>
+          <button class="btn btn-outline" onclick="showTruckHistory('${truck.plate}')">
+            <i class="fa-solid fa-clock-rotate-left"></i> History
+          </button>
+        </td>
       `;
       tbody.appendChild(tr);
 
@@ -249,10 +285,49 @@
           ${truck.exitDate ? `<div><strong>Exit:</strong> ${truck.exitDate}</div>` : ''}
           <div><strong>Details:</strong> ${escapeHtml(truck.details || 'N/A')}</div>
         </div>
+        <div class="truck-card-actions">
+          <button class="btn btn-outline" style="width:100%" onclick="showTruckHistory('${truck.plate}')">
+            <i class="fa-solid fa-clock-rotate-left"></i> View History
+          </button>
+        </div>
       `;
       mobileContainer.appendChild(card);
     });
   }
+
+  window.showTruckHistory = function(plate) {
+    const visits = trucks.filter(t => t.plate === plate).sort((a,b) => new Date(b.entryDate) - new Date(a.entryDate));
+    const container = document.getElementById('historyTimelineContainer');
+    document.getElementById('historyPlateTitle').innerText = plate;
+    container.innerHTML = '';
+
+    visits.forEach(v => {
+      const days = calculateDays(v.entryDate, v.exitDate);
+      const isCurrent = v.status === 'active';
+      const div = document.createElement('div');
+      div.className = 'history-card';
+      div.innerHTML = `
+        <div>
+          <strong style="color: ${isCurrent ? 'var(--accent-green)' : 'var(--text-main)'}">
+            ${isCurrent ? '🟢 Active Stay' : '⚪ Completed Stay'}
+          </strong>
+          <div style="font-size:0.8rem; color:var(--text-muted); margin-top:4px;">
+            In: <strong>${v.entryDate}</strong> | Out: <strong>${v.exitDate || 'Parked Now'}</strong>
+          </div>
+        </div>
+        <div>
+          <span class="days-badge ${isCurrent ? '' : 'warning'}">${days} Days</span>
+        </div>
+      `;
+      container.appendChild(div);
+    });
+
+    document.getElementById('historyModal').classList.add('active');
+  };
+
+  window.closeModal = function() {
+    document.getElementById('historyModal').classList.remove('active');
+  };
 
   function escapeHtml(str) { return str ? str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;") : ''; }
 </script>

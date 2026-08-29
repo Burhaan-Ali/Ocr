@@ -94,7 +94,7 @@
   @media (min-width: 768px) { .desktop-table { display: table; } }
   th { background: #0f172a; color: var(--text-muted); font-weight: 600; padding: 12px; border-bottom: 1px solid var(--card-border); white-space: nowrap; }
   td { padding: 12px; border-bottom: 1px solid var(--card-border); }
-  tbody tr { transition: background 0.3s ease; }
+  tbody tr { transition: all 0.4s ease; }
   tbody tr:hover { background: rgba(255, 255, 255, 0.02); }
 
   .mobile-cards { display: flex; flex-direction: column; gap: 12px; }
@@ -103,7 +103,7 @@
   .truck-card {
     background: #0f172a; border: 1px solid var(--card-border);
     border-radius: 8px; padding: 14px; display: flex; flex-direction: column; gap: 10px;
-    transition: transform 0.3s ease, opacity 0.3s ease;
+    transition: all 0.4s ease;
   }
   .truck-card-header { display: flex; justify-content: space-between; align-items: center; }
   .truck-card-body { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.85rem; color: var(--text-muted); }
@@ -134,7 +134,7 @@
 
   .mobile-nav {
     position: fixed; bottom: 0; left: 0; right: 0; background: #0f172a;
-    border-top: 1px solid var(--card-border); display: flex; justify-content: space-around;
+    border-top: 1px solid var(--card-border); display: flex; justify-space-around: space-around;
     padding: 8px 0; z-index: 900;
   }
   @media (min-width: 900px) { .mobile-nav { display: none; } }
@@ -152,7 +152,16 @@
   .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid var(--card-border); padding-bottom: 10px; }
   .modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; }
 
-  /* Registration Success Toast/Animation Modal */
+  /* Animations */
+  .animate-enter { animation: fadeInRow 0.4s ease-out; }
+  .animate-exit-slide { transform: translateX(100px); opacity: 0; }
+  .animate-delete-scale { transform: scale(0.8); opacity: 0; }
+
+  @keyframes fadeInRow {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
   .success-badge-icon {
     width: 60px; height: 60px; background: rgba(16, 185, 129, 0.2);
     color: var(--accent-green); border-radius: 50%; display: flex;
@@ -163,11 +172,6 @@
     0% { transform: scale(0); opacity: 0; }
     80% { transform: scale(1.1); opacity: 1; }
     100% { transform: scale(1); }
-  }
-  .animate-row { animation: fadeInRow 0.5s ease-out; }
-  @keyframes fadeInRow {
-    from { opacity: 0; transform: translateY(-10px); }
-    to { opacity: 1; transform: translateY(0); }
   }
 
   .history-timeline { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
@@ -295,7 +299,7 @@
     </div>
     <h3 style="margin-bottom: 6px;">Registered Successfully!</h3>
     <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 16px;">
-      Truck <strong id="successPlate" class="plate-tag"></strong> is now logged in active lot.
+      Truck <strong id="successPlate" class="plate-tag"></strong> logged in active lot.
     </p>
     <button class="btn btn-sm" style="width: 100%;" onclick="closeModal('successModal')">OK</button>
   </div>
@@ -308,13 +312,30 @@
       <i class="fa-solid fa-xmark" style="cursor: pointer; font-size:1.2rem;" onclick="closeModal('checkoutModal')"></i>
     </div>
     <div>
-      <p>Checkout plate: <strong id="modalPlate" class="plate-tag"></strong>?</p>
+      <p>Confirm departure for truck <strong id="modalPlate" class="plate-tag"></strong>?</p>
       <br>
       <p style="font-size: 0.9rem; color: var(--text-muted);">Total Duration: <strong id="modalDays"></strong></p>
     </div>
     <div class="modal-footer">
       <button class="btn btn-outline btn-sm" onclick="closeModal('checkoutModal')">Cancel</button>
       <button class="btn btn-danger btn-sm" id="confirmCheckoutBtn">Confirm Exit</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="deleteModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 style="color: var(--accent-red);"><i class="fa-solid fa-triangle-exclamation"></i> Confirm Delete</h3>
+      <i class="fa-solid fa-xmark" style="cursor: pointer; font-size:1.2rem;" onclick="closeModal('deleteModal')"></i>
+    </div>
+    <div>
+      <p>Are you sure you want to permanently delete record for plate <strong id="deletePlate" class="plate-tag"></strong>?</p>
+      <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 8px;">This action cannot be undone.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline btn-sm" onclick="closeModal('deleteModal')">Cancel</button>
+      <button class="btn btn-danger btn-sm" id="confirmDeleteBtn"><i class="fa-solid fa-trash"></i> Delete Permanently</button>
     </div>
   </div>
 </div>
@@ -340,7 +361,7 @@
   ];
 
   let currentTab = 'active';
-  let checkoutTargetId = null;
+  let targetActionId = null;
   let newlyAddedId = null;
 
   function getFormattedDate(offsetDays = 0) {
@@ -365,7 +386,7 @@
 
   document.getElementById('entryDate').value = getFormattedDate(0);
 
-  // Real-time double registration validation
+  // Validate double registration in real time
   document.getElementById('plateNumber').addEventListener('input', function() {
     const plate = this.value.trim().toUpperCase();
     const errorMsg = document.getElementById('plateErrorMsg');
@@ -389,7 +410,6 @@
     const entryDate = document.getElementById('entryDate').value;
     const notes = document.getElementById('notes').value.trim();
 
-    // Strict Double Registration Check
     const existingIndex = trucks.findIndex(t => t.plate === plate && t.status === 'active');
     if (existingIndex !== -1) {
       plateInput.classList.add('input-error');
@@ -405,7 +425,6 @@
     this.reset();
     document.getElementById('entryDate').value = getFormattedDate(0);
 
-    // Show Registration Success Animation Modal
     document.getElementById('successPlate').innerText = plate;
     document.getElementById('successModal').classList.add('active');
 
@@ -468,9 +487,10 @@
       let badgeClass = 'days-badge' + (days > 7 ? ' danger' : days > 3 ? ' warning' : '');
       const isNew = truck.id === newlyAddedId;
 
-      // Desktop Table Row
+      // Desktop Row
       const tr = document.createElement('tr');
-      if (isNew) tr.classList.add('animate-row');
+      tr.id = `row-desktop-${truck.id}`;
+      if (isNew) tr.classList.add('animate-enter');
 
       if (currentTab === 'active') {
         tr.innerHTML = `
@@ -482,7 +502,7 @@
           <td class="actions-cell">
             <button class="btn btn-outline btn-sm" onclick="showTruckHistory('${truck.plate}')"><i class="fa-solid fa-clock-rotate-left"></i></button>
             <button class="btn btn-outline btn-sm" onclick="openCheckout(${truck.id})"><i class="fa-solid fa-arrow-right-from-bracket"></i> Exit</button>
-            <button class="btn btn-outline btn-sm" style="color:var(--accent-red)" onclick="deleteTruck(${truck.id})"><i class="fa-solid fa-trash"></i></button>
+            <button class="btn btn-outline btn-sm" style="color:var(--accent-red)" onclick="openDelete(${truck.id})"><i class="fa-solid fa-trash"></i></button>
           </td>
         `;
       } else {
@@ -494,7 +514,7 @@
           <td><span class="days-badge">${days} Days</span></td>
           <td class="actions-cell">
             <button class="btn btn-outline btn-sm" onclick="showTruckHistory('${truck.plate}')"><i class="fa-solid fa-clock-rotate-left"></i></button>
-            <button class="btn btn-outline btn-sm" style="color:var(--accent-red)" onclick="deleteTruck(${truck.id})"><i class="fa-solid fa-trash"></i></button>
+            <button class="btn btn-outline btn-sm" style="color:var(--accent-red)" onclick="openDelete(${truck.id})"><i class="fa-solid fa-trash"></i></button>
           </td>
         `;
       }
@@ -502,7 +522,8 @@
 
       // Mobile Card
       const card = document.createElement('div');
-      card.className = 'truck-card' + (isNew ? ' animate-row' : '');
+      card.id = `card-mobile-${truck.id}`;
+      card.className = 'truck-card' + (isNew ? ' animate-enter' : '');
       card.innerHTML = `
         <div class="truck-card-header">
           <span class="plate-tag">${escapeHtml(truck.plate)}</span>
@@ -517,7 +538,7 @@
         <div class="truck-card-actions">
           <button class="btn btn-outline btn-sm" style="flex:1" onclick="showTruckHistory('${truck.plate}')"><i class="fa-solid fa-clock-rotate-left"></i> History</button>
           ${currentTab === 'active' ? `<button class="btn btn-outline btn-sm" style="flex:1" onclick="openCheckout(${truck.id})"><i class="fa-solid fa-arrow-right-from-bracket"></i> Exit</button>` : ''}
-          <button class="btn btn-outline btn-sm" style="color:var(--accent-red)" onclick="deleteTruck(${truck.id})"><i class="fa-solid fa-trash"></i></button>
+          <button class="btn btn-outline btn-sm" style="color:var(--accent-red)" onclick="openDelete(${truck.id})"><i class="fa-solid fa-trash"></i></button>
         </div>
       `;
       mobileContainer.appendChild(card);
@@ -554,35 +575,65 @@
     document.getElementById('historyModal').classList.add('active');
   }
 
+  // Open Exit Modal
   function openCheckout(id) {
     const truck = trucks.find(t => t.id === id);
     if (!truck) return;
-    checkoutTargetId = id;
+    targetActionId = id;
     document.getElementById('modalPlate').innerText = truck.plate;
     document.getElementById('modalDays').innerText = calculateDays(truck.entryDate) + ' Days';
     document.getElementById('checkoutModal').classList.add('active');
+  }
+
+  // Open Delete Modal
+  function openDelete(id) {
+    const truck = trucks.find(t => t.id === id);
+    if (!truck) return;
+    targetActionId = id;
+    document.getElementById('deletePlate').innerText = truck.plate;
+    document.getElementById('deleteModal').classList.add('active');
   }
 
   function closeModal(modalId) {
     document.getElementById(modalId).classList.remove('active');
   }
 
+  // Confirm Exit with Animation
   document.getElementById('confirmCheckoutBtn').addEventListener('click', function() {
-    if (!checkoutTargetId) return;
-    const truck = trucks.find(t => t.id === checkoutTargetId);
-    if (truck) {
-      truck.status = 'history';
-      truck.exitDate = getFormattedDate(0);
-      saveData();
-    }
+    if (!targetActionId) return;
     closeModal('checkoutModal');
+    
+    animateItemRemoval(targetActionId, 'animate-exit-slide', () => {
+      const truck = trucks.find(t => t.id === targetActionId);
+      if (truck) {
+        truck.status = 'history';
+        truck.exitDate = getFormattedDate(0);
+        saveData();
+      }
+    });
   });
 
-  function deleteTruck(id) {
-    if (confirm("Delete this visit record permanently?")) {
-      trucks = trucks.filter(t => t.id !== id);
+  // Confirm Delete with Animation
+  document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
+    if (!targetActionId) return;
+    closeModal('deleteModal');
+
+    animateItemRemoval(targetActionId, 'animate-delete-scale', () => {
+      trucks = trucks.filter(t => t.id !== targetActionId);
       saveData();
-    }
+    });
+  });
+
+  function animateItemRemoval(id, animationClass, callback) {
+    const desktopRow = document.getElementById(`row-desktop-${id}`);
+    const mobileCard = document.getElementById(`card-mobile-${id}`);
+
+    if (desktopRow) desktopRow.classList.add(animationClass);
+    if (mobileCard) mobileCard.classList.add(animationClass);
+
+    setTimeout(() => {
+      callback();
+    }, 350);
   }
 
   function exportData() {

@@ -70,6 +70,12 @@
   .btn-outline { background: transparent; border: 1px solid var(--card-border); color: var(--text-main); }
   .btn-outline:hover { background: rgba(255, 255, 255, 0.05); }
 
+  .btn-bell {
+    background: transparent; border: 1px solid var(--card-border); color: var(--accent-amber);
+    padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px;
+  }
+  .btn-bell.active { background: var(--accent-amber); color: #000; border-color: var(--accent-amber); font-weight: 700; }
+
   .desktop-table { display: none; width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem; }
   @media (min-width: 768px) { .desktop-table { display: table; } }
   th { background: #0f172a; color: var(--text-muted); font-weight: 600; padding: 12px; border-bottom: 1px solid var(--card-border); white-space: nowrap; }
@@ -124,15 +130,9 @@
   form { display: flex; flex-direction: column; gap: 12px; }
   .form-group { display: flex; flex-direction: column; gap: 6px; text-align: left; }
   label { font-size: 0.8rem; font-weight: 500; color: var(--text-muted); }
+  input { background: #0f172a; border: 1px solid var(--card-border); color: var(--text-main); padding: 10px; border-radius: 6px; font-size: 0.9rem; outline: none; }
   .error-msg { color: var(--accent-red); font-size: 0.8rem; display: none; margin-top: 4px; }
   .error-msg.active { display: block; }
-
-  /* Notification Bell Button */
-  .btn-bell {
-    background: transparent; border: 1px solid var(--card-border); color: var(--accent-amber);
-    padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px;
-  }
-  .btn-bell.active { background: var(--accent-amber); color: #000; border-color: var(--accent-amber); font-weight: 700; }
 </style>
 </head>
 <body>
@@ -267,7 +267,6 @@
   let currentTab = 'active';
   let isInitialLoad = true;
 
-  // Check Notification Status on Load
   window.addEventListener('DOMContentLoaded', () => {
     updateNotificationBtnStatus();
   });
@@ -302,7 +301,6 @@
     }
   }
 
-  // Trigger Native Mobile System Notification
   function sendMobileNotification(plate, spot) {
     if ("Notification" in window && Notification.permission === "granted") {
       const spotText = spot ? ` (Spot: ${spot})` : '';
@@ -313,7 +311,6 @@
         renotify: true
       });
 
-      // Tapping mobile system notification opens history modal
       notification.onclick = function (event) {
         event.preventDefault();
         window.focus();
@@ -323,7 +320,6 @@
     }
   }
 
-  // Firestore Real-Time Snapshot Listener
   onSnapshot(trucksCollection, (snapshot) => {
     if (!isInitialLoad) {
       snapshot.docChanges().forEach((change) => {
@@ -406,13 +402,11 @@
     const activeList = trucks.filter(t => t.status === 'active');
     const historyList = trucks.filter(t => t.status === 'history');
 
-    const totalVisitsCount = activeList.length + historyList.length;
-
     document.getElementById('activeCount').innerText = activeList.length;
     document.getElementById('historyCount').innerText = historyList.length;
     document.getElementById('stat-currently-parked').innerText = activeList.length;
     document.getElementById('stat-total-departed').innerText = historyList.length;
-    document.getElementById('stat-total-visits').innerText = totalVisitsCount;
+    document.getElementById('stat-total-visits').innerText = activeList.length + historyList.length;
 
     const targetList = currentTab === 'active' ? activeList : historyList;
     const filteredList = targetList.filter(t => {

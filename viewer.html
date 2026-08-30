@@ -31,7 +31,6 @@
   }
   .header-title h1 { font-size: 1.5rem; font-weight: 700; display: flex; align-items: center; gap: 10px; }
   .header-title p { color: var(--text-muted); font-size: 0.85rem; margin-top: 2px; }
-  .header-actions { display: flex; gap: 8px; align-items: center; }
 
   .stats-bar { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; width: 100%; margin-bottom: 20px; }
   .stat-card {
@@ -69,12 +68,6 @@
   .btn:hover { background: var(--primary-hover); }
   .btn-outline { background: transparent; border: 1px solid var(--card-border); color: var(--text-main); }
   .btn-outline:hover { background: rgba(255, 255, 255, 0.05); }
-
-  .btn-bell {
-    background: transparent; border: 1px solid var(--card-border); color: var(--accent-amber);
-    padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px;
-  }
-  .btn-bell.active { background: var(--accent-amber); color: #000; border-color: var(--accent-amber); font-weight: 700; }
 
   .desktop-table { display: none; width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem; }
   @media (min-width: 768px) { .desktop-table { display: table; } }
@@ -130,12 +123,63 @@
   form { display: flex; flex-direction: column; gap: 12px; }
   .form-group { display: flex; flex-direction: column; gap: 6px; text-align: left; }
   label { font-size: 0.8rem; font-weight: 500; color: var(--text-muted); }
-  input { background: #0f172a; border: 1px solid var(--card-border); color: var(--text-main); padding: 10px; border-radius: 6px; font-size: 0.9rem; outline: none; }
   .error-msg { color: var(--accent-red); font-size: 0.8rem; display: none; margin-top: 4px; }
   .error-msg.active { display: block; }
+
+  /* Toast Notification Styling */
+  .toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: none;
+  }
+
+  .toast {
+    background: var(--card-bg);
+    border: 1px solid var(--accent-amber);
+    border-left: 5px solid var(--accent-amber);
+    color: var(--text-main);
+    padding: 14px 18px;
+    border-radius: 8px;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 280px;
+    max-width: 360px;
+    pointer-events: auto;
+    cursor: pointer;
+    transition: transform 0.15s ease, border-color 0.15s ease;
+    animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .toast:hover {
+    transform: translateY(-2px);
+    border-color: var(--primary);
+  }
+
+  @keyframes slideIn {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+  }
+
+  @keyframes fadeOut {
+    from { opacity: 1; transform: scale(1); }
+    to { opacity: 0; transform: scale(0.95); }
+  }
+
+  .toast.hide {
+    animation: fadeOut 0.3s forwards;
+  }
 </style>
 </head>
 <body>
+
+<div id="toastContainer" class="toast-container"></div>
 
 <div class="container">
   <header>
@@ -143,12 +187,7 @@
       <h1><i class="fa-solid fa-truck-ramp-box"></i> TruckPark Log</h1>
       <p>Real-Time Parking Dashboard</p>
     </div>
-    <div class="header-actions">
-      <button class="btn-bell" id="enableNotifyBtn" onclick="requestNotificationPermission()">
-        <i class="fa-solid fa-bell"></i> Enable Alerts
-      </button>
-      <button class="btn btn-outline" onclick="openLoginModal()"><i class="fa-solid fa-user-lock"></i> Admin</button>
-    </div>
+    <button class="btn btn-outline" onclick="openLoginModal()"><i class="fa-solid fa-user-lock"></i> Admin Login</button>
   </header>
 
   <div class="stats-bar">
@@ -267,80 +306,6 @@
   let currentTab = 'active';
   let isInitialLoad = true;
 
-  window.addEventListener('DOMContentLoaded', () => {
-    updateNotificationBtnStatus();
-  });
-
-  window.requestNotificationPermission = function() {
-    if (!("Notification" in window)) {
-      alert("This browser does not support mobile notifications.");
-      return;
-    }
-
-    Notification.requestPermission().then((permission) => {
-      updateNotificationBtnStatus();
-      if (permission === "granted") {
-        new Notification("Truck Park System", {
-          body: "Mobile notification alerts activated!",
-          icon: "https://cdn-icons-png.flaticon.com/512/2554/2554978.png"
-        });
-      }
-    });
-  };
-
-  function updateNotificationBtnStatus() {
-    const btn = document.getElementById('enableNotifyBtn');
-    if (!("Notification" in window)) return;
-
-    if (Notification.permission === "granted") {
-      btn.classList.add('active');
-      btn.innerHTML = `<i class="fa-solid fa-bell-circle-check"></i> Alerts Active`;
-    } else {
-      btn.classList.remove('active');
-      btn.innerHTML = `<i class="fa-solid fa-bell"></i> Enable Alerts`;
-    }
-  }
-
-  function sendMobileNotification(plate, spot) {
-    if ("Notification" in window && Notification.permission === "granted") {
-      const spotText = spot ? ` (Spot: ${spot})` : '';
-      const notification = new Notification("🚛 Truck Departed!", {
-        body: `Plate: ${plate}${spotText}\nTap to open complete truck history.`,
-        icon: "https://cdn-icons-png.flaticon.com/512/2554/2554978.png",
-        tag: `truck-depart-${plate}`,
-        renotify: true
-      });
-
-      notification.onclick = function (event) {
-        event.preventDefault();
-        window.focus();
-        showTruckHistory(plate);
-        notification.close();
-      };
-    }
-  }
-
-  onSnapshot(trucksCollection, (snapshot) => {
-    if (!isInitialLoad) {
-      snapshot.docChanges().forEach((change) => {
-        if (change.type === "modified") {
-          const data = change.doc.data();
-          if (data.status === 'history') {
-            sendMobileNotification(data.plate, data.spot);
-          }
-        }
-      });
-    }
-
-    trucks = [];
-    snapshot.forEach((docSnap) => {
-      trucks.push({ id: docSnap.id, ...docSnap.data() });
-    });
-
-    render();
-    isInitialLoad = false;
-  });
-
   window.openLoginModal = function() {
     if (sessionStorage.getItem('authenticated') === 'true') {
       window.location.href = 'index.html';
@@ -361,6 +326,62 @@
       document.getElementById('adminLoginError').classList.add('active');
     }
   };
+
+  function showCheckoutToast(plate, spot) {
+    const container = document.getElementById('toastContainer');
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    
+    toast.onclick = () => {
+      showTruckHistory(plate);
+      toast.classList.add('hide');
+      setTimeout(() => toast.remove(), 300);
+    };
+
+    toast.innerHTML = `
+      <i class="fa-solid fa-truck-arrow-right" style="color: var(--accent-amber); font-size: 1.2rem;"></i>
+      <div style="flex: 1;">
+        <div style="font-weight: 700; font-size: 0.9rem; display: flex; justify-content: space-between; align-items: center;">
+          <span>Truck Departed!</span>
+          <span style="font-size: 0.7rem; color: var(--primary); font-weight: 500;">Tap for history <i class="fa-solid fa-chevron-right"></i></span>
+        </div>
+        <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
+          Plate: <span class="plate-tag" style="padding: 1px 4px; font-size: 0.75rem;">${escapeHtml(plate)}</span> 
+          ${spot ? `(Spot: ${escapeHtml(spot)})` : ''}
+        </div>
+      </div>
+    `;
+
+    container.appendChild(toast);
+
+    setTimeout(() => {
+      if (toast.parentNode) {
+        toast.classList.add('hide');
+        setTimeout(() => toast.remove(), 300);
+      }
+    }, 6000);
+  }
+
+  onSnapshot(trucksCollection, (snapshot) => {
+    if (!isInitialLoad) {
+      snapshot.docChanges().forEach((change) => {
+        if (change.type === "modified") {
+          const data = change.doc.data();
+          if (data.status === 'history') {
+            showCheckoutToast(data.plate, data.spot);
+          }
+        }
+      });
+    }
+
+    trucks = [];
+    snapshot.forEach((docSnap) => {
+      trucks.push({ id: docSnap.id, ...docSnap.data() });
+    });
+
+    render();
+    isInitialLoad = false;
+  });
 
   function calculateDays(entryDateStr, exitDateStr = null) {
     const start = new Date(entryDateStr);
@@ -402,11 +423,13 @@
     const activeList = trucks.filter(t => t.status === 'active');
     const historyList = trucks.filter(t => t.status === 'history');
 
+    const totalVisitsCount = activeList.length + historyList.length;
+
     document.getElementById('activeCount').innerText = activeList.length;
     document.getElementById('historyCount').innerText = historyList.length;
     document.getElementById('stat-currently-parked').innerText = activeList.length;
     document.getElementById('stat-total-departed').innerText = historyList.length;
-    document.getElementById('stat-total-visits').innerText = activeList.length + historyList.length;
+    document.getElementById('stat-total-visits').innerText = totalVisitsCount;
 
     const targetList = currentTab === 'active' ? activeList : historyList;
     const filteredList = targetList.filter(t => {

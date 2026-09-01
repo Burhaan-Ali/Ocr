@@ -1,345 +1,626 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Truck Parking & Stay Duration Tracker</title>
-  <style>
-    :root {
-      --bg-color: #f4f6f9;
-      --card-bg: #ffffff;
-      --primary: #1e293b;
-      --accent: #2563eb;
-      --accent-hover: #1d4ed8;
-      --danger: #dc2626;
-      --danger-hover: #b91c1c;
-      --text-main: #0f172a;
-      --text-muted: #64748b;
-      --border: #e2e8f0;
-    }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Truck Parking Management System</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+  :root {
+    --primary: #2563eb;
+    --primary-hover: #1d4ed8;
+    --bg-dark: #0f172a;
+    --card-bg: #1e293b;
+    --card-border: #334155;
+    --text-main: #f8fafc;
+    --text-muted: #94a3b8;
+    --accent-green: #10b981;
+    --accent-amber: #f59e0b;
+    --accent-red: #ef4444;
+  }
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    }
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+  body { background-color: var(--bg-dark); color: var(--text-main); padding: 16px; min-height: 100vh; padding-bottom: 80px; }
+  .container { max-width: 1200px; margin: 0 auto; }
 
-    body {
-      background-color: var(--bg-color);
-      color: var(--text-main);
-      padding: 24px;
-      line-height: 1.5;
-    }
+  header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid var(--card-border);
+    flex-wrap: wrap; gap: 12px;
+  }
+  .header-title h1 { font-size: 1.5rem; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+  .header-title p { color: var(--text-muted); font-size: 0.85rem; margin-top: 2px; }
 
-    .container {
-      max-width: 1100px;
-      margin: 0 auto;
-    }
+  .header-actions { display: flex; gap: 8px; align-items: center; }
 
-    header {
-      margin-bottom: 24px;
-    }
+  .stats-bar { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; width: 100%; margin-bottom: 20px; }
+  .stat-card {
+    background: var(--card-bg); border: 1px solid var(--card-border);
+    padding: 14px; border-radius: 10px; text-align: center;
+  }
+  .stat-card .val { font-size: 1.5rem; font-weight: 700; }
+  .stat-card .lbl { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; }
 
-    header h1 {
-      font-size: 1.75rem;
-      color: var(--primary);
-    }
+  .layout { display: grid; grid-template-columns: 1fr; gap: 20px; }
+  @media (min-width: 900px) { .layout { grid-template-columns: 340px 1fr; } }
 
-    header p {
-      color: var(--text-muted);
-      font-size: 0.95rem;
-    }
+  .card {
+    background: var(--card-bg); border: 1px solid var(--card-border);
+    border-radius: 12px; padding: 16px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+  }
+  .card-title { font-size: 1rem; font-weight: 600; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
 
-    .card {
-      background: var(--card-bg);
-      border-radius: 8px;
-      border: 1px solid var(--border);
-      padding: 20px;
-      margin-bottom: 24px;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-    }
+  .section-view { display: block; }
+  @media (max-width: 899px) {
+    .section-view.hidden-mobile { display: none !important; }
+  }
 
-    .card h2 {
-      font-size: 1.2rem;
-      margin-bottom: 16px;
-      color: var(--primary);
-    }
+  form { display: flex; flex-direction: column; gap: 12px; }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  label { font-size: 0.8rem; font-weight: 500; color: var(--text-muted); }
 
-    .form-group {
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-    }
+  input, select, textarea {
+    background: #0f172a; border: 1px solid var(--card-border);
+    color: var(--text-main); padding: 12px; border-radius: 8px;
+    font-size: 1rem; outline: none; transition: border-color 0.2s; width: 100%;
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--primary); }
+  input.input-error { border-color: var(--accent-red) !important; background: rgba(239, 68, 68, 0.1); }
 
-    input[type="text"] {
-      flex: 1;
-      min-width: 200px;
-      padding: 10px 14px;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      font-size: 1rem;
-      outline: none;
-    }
+  .error-msg { color: var(--accent-red); font-size: 0.8rem; display: none; margin-top: 4px; }
+  .error-msg.active { display: block; }
 
-    input[type="text"]:focus {
-      border-color: var(--accent);
-    }
+  .btn {
+    background: var(--primary); color: white; border: none; padding: 10px 14px;
+    border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.9rem;
+    display: inline-flex; justify-content: center; align-items: center; gap: 8px;
+    transition: background 0.2s, transform 0.1s; text-decoration: none;
+  }
+  .btn:hover { background: var(--primary-hover); }
+  .btn:active { transform: scale(0.98); }
+  .btn-outline { background: transparent; border: 1px solid var(--card-border); color: var(--text-main); }
+  .btn-outline:hover { background: rgba(255, 255, 255, 0.05); }
+  .btn-danger { background: var(--accent-red); }
+  .btn-danger:hover { background: #dc2626; }
+  .btn-sm { padding: 8px 12px; font-size: 0.85rem; border-radius: 6px; }
 
-    button {
-      padding: 10px 18px;
-      border: none;
-      border-radius: 6px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background-color 0.2s;
-    }
+  .toolbar { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+  @media (min-width: 640px) { .toolbar { flex-direction: row; justify-content: space-between; align-items: center; } }
+  
+  .search-wrapper { position: relative; flex: 1; width: 100%; }
+  .search-wrapper i.search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 1rem; }
+  .search-wrapper input { padding-left: 42px; padding-right: 36px; height: 44px; }
+  .clear-search {
+    position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+    color: var(--text-muted); cursor: pointer; display: none; font-size: 0.9rem;
+    background: transparent; border: none;
+  }
+  .clear-search:hover { color: var(--text-main); }
+  .clear-search.active { display: block; }
 
-    .btn-primary {
-      background-color: var(--accent);
-      color: #ffffff;
-    }
+  .truck-cards-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px;
+  }
+  .truck-card {
+    background: #0f172a; border: 1px solid var(--card-border); border-radius: 10px;
+    padding: 16px; display: flex; flex-direction: column; justify-content: space-between; gap: 12px;
+  }
+  .truck-card:hover { border-color: var(--primary); }
+  .truck-card-header { display: flex; justify-content: space-between; align-items: center; }
+  .spot-tag { font-weight: 700; color: var(--text-main); font-size: 0.95rem; }
 
-    .btn-primary:hover {
-      background-color: var(--accent-hover);
-    }
+  .plate-tag {
+    background: #fbbf24; color: #000; font-family: monospace; font-weight: 700;
+    padding: 4px 8px; border-radius: 4px; border: 2px solid #000; letter-spacing: 1px; font-size: 0.95rem;
+  }
+  .days-badge {
+    background: rgba(16, 185, 129, 0.15); color: var(--accent-green); font-weight: 700;
+    padding: 4px 10px; border-radius: 12px; font-size: 0.8rem;
+  }
+  .days-badge.warning { background: rgba(245, 158, 11, 0.15); color: var(--accent-amber); }
+  .days-badge.danger { background: rgba(239, 68, 68, 0.15); color: var(--accent-red); }
 
-    .btn-danger {
-      background-color: var(--danger);
-      color: #ffffff;
-      padding: 6px 12px;
-      font-size: 0.875rem;
-    }
+  .truck-card-body { display: flex; flex-direction: column; gap: 6px; font-size: 0.85rem; color: var(--text-muted); }
+  .truck-card-body div { display: flex; justify-content: space-between; border-bottom: 1px dashed rgba(255,255,255,0.05); padding-bottom: 4px; }
 
-    .btn-danger:hover {
-      background-color: var(--danger-hover);
-    }
+  .truck-card-actions { display: flex; gap: 8px; border-top: 1px solid var(--card-border); padding-top: 12px; margin-top: 4px; }
+  .truck-card-actions button { flex: 1; }
 
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      text-align: left;
-    }
+  .tab-buttons { display: flex; gap: 8px; margin-bottom: 14px; }
+  .tab-btn {
+    padding: 10px 14px; border-radius: 6px; background: transparent; flex: 1;
+    border: 1px solid var(--card-border); color: var(--text-muted); cursor: pointer;
+    font-size: 0.85rem; font-weight: 500; text-align: center;
+  }
+  .tab-btn.active { background: var(--primary); border-color: var(--primary); color: white; }
 
-    th, td {
-      padding: 12px 14px;
-      border-bottom: 1px solid var(--border);
-      font-size: 0.95rem;
-    }
+  .mobile-nav {
+    position: fixed; bottom: 0; left: 0; right: 0; background: #0f172a;
+    border-top: 1px solid var(--card-border); display: flex; justify-around: opacity;
+    padding: 8px 0; z-index: 900;
+  }
+  @media (min-width: 900px) { .mobile-nav { display: none; } }
+  .nav-item { display: flex; flex-direction: column; align-items: center; gap: 4px; color: var(--text-muted); font-size: 0.7rem; border: none; background: transparent; cursor: pointer; width: 33%; }
+  .nav-item.active { color: var(--primary); }
 
-    th {
-      background-color: #f8fafc;
-      color: var(--text-muted);
-      font-weight: 600;
-      text-transform: uppercase;
-      font-size: 0.75rem;
-      letter-spacing: 0.05em;
-    }
+  .modal-overlay {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85);
+    display: flex; justify-content: center; align-items: center; z-index: 1000;
+    opacity: 0; pointer-events: none; transition: opacity 0.2s; padding: 16px;
+  }
+  .modal-overlay.active { opacity: 1; pointer-events: auto; }
+  .modal { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; width: 100%; max-width: 440px; padding: 20px; }
+  .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid var(--card-border); padding-bottom: 10px; }
+  .modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; }
 
-    tr:last-child td {
-      border-bottom: none;
-    }
-
-    .badge-active {
-      display: inline-block;
-      padding: 2px 8px;
-      background-color: #dbeafe;
-      color: #1e40af;
-      border-radius: 12px;
-      font-size: 0.85rem;
-      font-weight: 600;
-    }
-
-    .empty-msg {
-      text-align: center;
-      color: var(--text-muted);
-      padding: 20px 0;
-      font-style: italic;
-    }
-  </style>
+  .history-timeline { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+  .history-card { background: #0f172a; border: 1px solid var(--card-border); border-radius: 8px; padding: 12px; display: flex; justify-content: space-between; align-items: center; }
+</style>
 </head>
 <body>
 
-  <div class="container">
-    <header>
-      <h1>Truck Parking Log & Duration Tracker</h1>
-      <p>Monitor live vehicle stays and total elapsed hours/minutes</p>
-    </header>
+<div class="modal-overlay active" id="authModal">
+  <div class="modal" style="text-align: center;">
+    <i class="fa-solid fa-lock" style="font-size: 2.5rem; color: var(--primary); margin-bottom: 12px;"></i>
+    <h3 style="margin-bottom: 8px;">Admin Access Required</h3>
+    <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 16px;">Log in to access full management controls.</p>
+    
+    <form id="loginForm" onsubmit="handleLogin(event)">
+      <div class="form-group" style="text-align: left;">
+        <label>Username</label>
+        <input type="text" id="loginUser" placeholder="Enter username" required>
+      </div>
+      <div class="form-group" style="text-align: left;">
+        <label>Password</label>
+        <input type="password" id="loginPass" placeholder="Enter password" required>
+      </div>
+      <div class="error-msg" id="loginErrorMsg" style="margin-bottom: 8px;">Invalid username or password.</div>
+      <button type="submit" class="btn" style="width: 100%;">Sign In</button>
+      <a href="viewer.html" class="btn btn-outline" style="width: 100%; margin-top: 8px;"><i class="fa-solid fa-eye"></i> Go to Public Dashboard</a>
+    </form>
+  </div>
+</div>
 
-    <!-- Entry Form -->
-    <div class="card">
-      <h2>Register Truck Entry</h2>
-      <form id="entryForm" class="form-group">
-        <input type="text" id="plateInput" placeholder="Enter License Plate (e.g., KBX-492)" required />
-        <input type="text" id="driverInput" placeholder="Driver / Carrier Name (Optional)" />
-        <button type="submit" class="btn-primary">Check In Truck</button>
-      </form>
+<div class="container" id="mainContent" style="display: none;">
+  <header>
+    <div class="header-title">
+      <h1><i class="fa-solid fa-truck-ramp-box"></i> TruckPark Admin</h1>
+      <p>Cloud Synchronized Control Panel</p>
     </div>
-
-    <!-- Active Trucks -->
-    <div class="card">
-      <h2>Currently Parked (<span id="activeCount">0</span>)</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>Plate Number</th>
-            <th>Driver / Details</th>
-            <th>Check-In Time</th>
-            <th>Current Duration</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody id="activeTableBody">
-          <tr>
-            <td colspan="5" class="empty-msg">No active trucks parked.</td>
-          </tr>
-        </tbody>
-      </table>
+    <div class="header-actions">
+      <a href="viewer.html" class="btn btn-outline btn-sm"><i class="fa-solid fa-eye"></i> View Mode</a>
+      <button class="btn btn-outline btn-sm" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
     </div>
+  </header>
 
-    <!-- History Log -->
-    <div class="card">
-      <h2>Completed Stays</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>Plate Number</th>
-            <th>Driver / Details</th>
-            <th>Check-In Time</th>
-            <th>Check-Out Time</th>
-            <th>Total Stay Duration</th>
-          </tr>
-        </thead>
-        <tbody id="historyTableBody">
-          <tr>
-            <td colspan="5" class="empty-msg">No departure history yet.</td>
-          </tr>
-        </tbody>
-      </table>
+  <div class="stats-bar">
+    <div class="stat-card">
+      <div class="val" id="stat-currently-parked" style="color: var(--accent-green);">0</div>
+      <div class="lbl">Parked</div>
+    </div>
+    <div class="stat-card">
+      <div class="val" id="stat-departed" style="color: var(--accent-amber);">0</div>
+      <div class="lbl">Departed</div>
+    </div>
+    <div class="stat-card">
+      <div class="val" id="stat-total-visits" style="color: var(--primary);">0</div>
+      <div class="lbl">Total Visits</div>
     </div>
   </div>
 
-  <script>
-    let activeTrucks = JSON.parse(localStorage.getItem('activeTrucks')) || [];
-    let completedStays = JSON.parse(localStorage.getItem('completedStays')) || [];
+  <div class="layout">
+    <div class="card section-view hidden-mobile" id="registerSection">
+      <div class="card-title">
+        <i class="fa-solid fa-plus-circle" style="color: var(--primary);"></i> Register Truck Visit
+      </div>
+      <form id="parkForm">
+        <div class="form-group">
+          <label for="plateNumber">Plate Number *</label>
+          <input type="text" id="plateNumber" placeholder="e.g. TRK-482-AA" required style="text-transform: uppercase;">
+          <div class="error-msg" id="plateErrorMsg"><i class="fa-solid fa-circle-exclamation"></i> Truck is already parked inside!</div>
+        </div>
+        <div class="form-group">
+          <label for="spotNumber">Spot # (Optional)</label>
+          <input type="text" id="spotNumber" placeholder="e.g. Bay 04">
+        </div>
+        <div class="form-group">
+          <label for="truckDetails">Truck Model / Color</label>
+          <input type="text" id="truckDetails" placeholder="e.g. Blue Scania Trailer">
+        </div>
+        <div class="form-group">
+          <label for="entryDate">Entry Date</label>
+          <input type="date" id="entryDate" required>
+        </div>
+        <div class="form-group">
+          <label for="notes">Notes</label>
+          <textarea id="notes" rows="2" placeholder="Driver contact, cargo details..."></textarea>
+        </div>
+        <button type="submit" class="btn">
+          <i class="fa-solid fa-square-check"></i> Register Entry
+        </button>
+      </form>
+    </div>
 
-    const entryForm = document.getElementById('entryForm');
-    const plateInput = document.getElementById('plateInput');
-    const driverInput = document.getElementById('driverInput');
-    const activeTableBody = document.getElementById('activeTableBody');
-    const historyTableBody = document.getElementById('historyTableBody');
-    const activeCount = document.getElementById('activeCount');
+    <div class="section-view" id="listSection">
+      <div class="tab-buttons">
+        <button class="tab-btn active" id="tabActive" onclick="switchTab('active')">
+          <i class="fa-solid fa-truck"></i> Parked (<span id="activeCount">0</span>)
+        </button>
+        <button class="tab-btn" id="tabHistory" onclick="switchTab('history')">
+          <i class="fa-solid fa-clock-rotate-left"></i> Departed (<span id="historyCount">0</span>)
+        </button>
+      </div>
 
-    // Save to LocalStorage
-    function saveData() {
-      localStorage.setItem('activeTrucks', JSON.stringify(activeTrucks));
-      localStorage.setItem('completedStays', JSON.stringify(completedStays));
+      <div class="card">
+        <div class="toolbar">
+          <div class="search-wrapper">
+            <i class="fa-solid fa-magnifying-glass search-icon"></i>
+            <input type="text" id="searchInput" placeholder="Search plate, spot, details, notes, or date..." oninput="handleSearchInput()">
+            <button class="clear-search" id="clearSearchBtn" onclick="clearSearch()"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="exportData()" style="white-space: nowrap;">
+            <i class="fa-solid fa-file-csv"></i> Export CSV
+          </button>
+        </div>
+
+        <div class="truck-cards-grid" id="cardsContainer"></div>
+
+        <div id="emptyState" class="empty-state" style="display: none; text-align: center; padding: 40px; color: var(--text-muted);">
+          <i class="fa-solid fa-magnifying-glass" style="font-size: 2.5rem; margin-bottom: 12px; opacity: 0.5;"></i>
+          <p id="emptyStateText">No matching records found.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="mobile-nav">
+  <button class="nav-item" id="navRegisterTab" onclick="showMobileView('register')">
+    <i class="fa-solid fa-plus-circle"></i>
+    <span>Register</span>
+  </button>
+  <button class="nav-item active" id="navActiveTab" onclick="showMobileView('active')">
+    <i class="fa-solid fa-truck"></i>
+    <span>Active</span>
+  </button>
+  <button class="nav-item" id="navHistoryTab" onclick="showMobileView('history')">
+    <i class="fa-solid fa-clock-rotate-left"></i>
+    <span>History</span>
+  </button>
+</div>
+
+<!-- MODALS -->
+<div class="modal-overlay" id="checkoutModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Truck Exit Confirmation</h3>
+      <i class="fa-solid fa-xmark" style="cursor: pointer;" onclick="closeModal('checkoutModal')"></i>
+    </div>
+    <p>Confirm departure for truck <strong id="modalPlate" class="plate-tag"></strong>?</p>
+    <p style="font-size: 0.9rem; color: var(--text-muted); margin-top: 8px;">Total Duration: <strong id="modalDays"></strong></p>
+    <div class="modal-footer">
+      <button class="btn btn-outline btn-sm" onclick="closeModal('checkoutModal')">Cancel</button>
+      <button class="btn btn-danger btn-sm" id="confirmCheckoutBtn">Confirm Exit</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="deleteModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 style="color: var(--accent-red);"><i class="fa-solid fa-triangle-exclamation"></i> Confirm Delete</h3>
+      <i class="fa-solid fa-xmark" style="cursor: pointer;" onclick="closeModal('deleteModal')"></i>
+    </div>
+    <p>Are you sure you want to permanently delete record for plate <strong id="deletePlate" class="plate-tag"></strong>?</p>
+    <div class="modal-footer">
+      <button class="btn btn-outline btn-sm" onclick="closeModal('deleteModal')">Cancel</button>
+      <button class="btn btn-danger btn-sm" id="confirmDeleteBtn"><i class="fa-solid fa-trash"></i> Delete</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="historyModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Timeline: <span id="historyPlateTitle" class="plate-tag"></span></h3>
+      <i class="fa-solid fa-xmark" style="cursor: pointer;" onclick="closeModal('historyModal')"></i>
+    </div>
+    <div id="historyTimelineContainer" class="history-timeline"></div>
+    <div class="modal-footer">
+      <button class="btn btn-outline btn-sm" onclick="closeModal('historyModal')">Close</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import { 
+    getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc 
+  } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDvjeTogG8mOArbl8K1m0JHC5y2UQO-Olo",
+    authDomain: "parking-ea350.firebaseapp.com",
+    projectId: "parking-ea350",
+    storageBucket: "parking-ea350.firebasestorage.app",
+    messagingSenderId: "415438583979",
+    appId: "1:415438583979:web:96cd9482a8262bc66d5fee"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const trucksCollection = collection(db, "trucks");
+
+  let trucks = [];
+  let currentTab = 'active';
+  let targetActionId = null;
+
+  window.handleLogin = function(e) {
+    e.preventDefault();
+    const user = document.getElementById('loginUser').value;
+    const pass = document.getElementById('loginPass').value;
+
+    if (user === 'admin' && pass === 'parking123') {
+      sessionStorage.setItem('authenticated', 'true');
+      checkAuth();
+    } else {
+      document.getElementById('loginErrorMsg').classList.add('active');
+    }
+  };
+
+  window.logout = function() {
+    sessionStorage.removeItem('authenticated');
+    checkAuth();
+  };
+
+  function checkAuth() {
+    if (sessionStorage.getItem('authenticated') === 'true') {
+      document.getElementById('authModal').classList.remove('active');
+      document.getElementById('mainContent').style.display = 'block';
+    } else {
+      document.getElementById('authModal').classList.add('active');
+      document.getElementById('mainContent').style.display = 'none';
+    }
+  }
+
+  checkAuth();
+
+  onSnapshot(trucksCollection, (snapshot) => {
+    trucks = [];
+    snapshot.forEach((docSnap) => {
+      trucks.push({ id: docSnap.id, ...docSnap.data() });
+    });
+    render();
+  });
+
+  function getFormattedDate(offsetDays = 0) {
+    const d = new Date();
+    d.setDate(d.getDate() + offsetDays);
+    return d.toISOString().split('T')[0];
+  }
+
+  function calculateDays(entryDateStr, exitDateStr = null) {
+    const start = new Date(entryDateStr);
+    const end = exitDateStr ? new Date(exitDateStr) : new Date();
+    start.setHours(0,0,0,0);
+    end.setHours(0,0,0,0);
+    const diffTime = Math.abs(end - start);
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+  }
+
+  document.getElementById('entryDate').value = getFormattedDate(0);
+
+  document.getElementById('parkForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const plateInput = document.getElementById('plateNumber');
+    const plate = plateInput.value.trim().toUpperCase();
+    const spot = document.getElementById('spotNumber').value.trim() || 'N/A';
+    const details = document.getElementById('truckDetails').value.trim();
+    const entryDate = document.getElementById('entryDate').value;
+    const notes = document.getElementById('notes').value.trim();
+
+    const existingIndex = trucks.findIndex(t => t.plate === plate && t.status === 'active');
+    if (existingIndex !== -1) {
+      plateInput.classList.add('input-error');
+      document.getElementById('plateErrorMsg').classList.add('active');
+      return;
     }
 
-    // Format duration in Hours and Minutes
-    function formatDuration(ms) {
-      const totalMinutes = Math.floor(ms / (1000 * 60));
-      const hours = Math.floor(totalMinutes / 60);
-      const minutes = totalMinutes % 60;
-
-      if (hours === 0) {
-        return `${minutes} min${minutes !== 1 ? 's' : ''}`;
-      }
-      return `${hours} hr${hours !== 1 ? 's' : ''} ${minutes} min${minutes !== 1 ? 's' : ''}`;
-    }
-
-    // Format Timestamp
-    function formatTime(timestamp) {
-      const date = new Date(timestamp);
-      return date.toLocaleString([], { 
-        month: 'short', 
-        day: 'numeric', 
-        hour: '2-digit', 
-        minute: '2-digit' 
+    try {
+      await addDoc(trucksCollection, {
+        plate, spot, details, entryDate, status: 'active', notes, createdAt: Date.now()
       });
+      this.reset();
+      document.getElementById('plateErrorMsg').classList.remove('active');
+      plateInput.classList.remove('input-error');
+      document.getElementById('entryDate').value = getFormattedDate(0);
+      showMobileView('active');
+    } catch (err) {
+      alert("Error saving record: " + err.message);
     }
+  });
 
-    // Handle Form Submit
-    entryForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const plate = plateInput.value.trim().toUpperCase();
-      const driver = driverInput.value.trim() || 'N/A';
+  window.switchTab = function(tab) {
+    currentTab = tab;
+    document.getElementById('tabActive').classList.toggle('active', tab === 'active');
+    document.getElementById('tabHistory').classList.toggle('active', tab === 'history');
+    render();
+  };
 
-      if (!plate) return;
+  window.showMobileView = function(view) {
+    const regSec = document.getElementById('registerSection');
+    const listSec = document.getElementById('listSection');
+    
+    document.getElementById('navRegisterTab').classList.toggle('active', view === 'register');
+    document.getElementById('navActiveTab').classList.toggle('active', view === 'active');
+    document.getElementById('navHistoryTab').classList.toggle('active', view === 'history');
 
-      const newTruck = {
-        id: Date.now().toString(),
-        plate: plate,
-        driver: driver,
-        entryTime: Date.now()
-      };
+    if (view === 'register') {
+      regSec.classList.remove('hidden-mobile');
+      listSec.classList.add('hidden-mobile');
+    } else {
+      regSec.classList.add('hidden-mobile');
+      listSec.classList.remove('hidden-mobile');
+      switchTab(view);
+    }
+  };
 
-      activeTrucks.push(newTruck);
-      saveData();
-      renderTables();
+  window.handleSearchInput = function() {
+    const input = document.getElementById('searchInput');
+    document.getElementById('clearSearchBtn').classList.toggle('active', input.value.length > 0);
+    render();
+  };
 
-      plateInput.value = '';
-      driverInput.value = '';
+  window.clearSearch = function() {
+    const input = document.getElementById('searchInput');
+    input.value = '';
+    document.getElementById('clearSearchBtn').classList.remove('active');
+    render();
+  };
+
+  function render() {
+    const container = document.getElementById('cardsContainer');
+    const searchTerm = document.getElementById('searchInput').value.trim().toLowerCase();
+    container.innerHTML = '';
+
+    const activeList = trucks.filter(t => t.status === 'active');
+    const historyList = trucks.filter(t => t.status === 'history');
+
+    const totalVisitsCount = activeList.length + historyList.length;
+
+    document.getElementById('activeCount').innerText = activeList.length;
+    document.getElementById('historyCount').innerText = historyList.length;
+    document.getElementById('stat-currently-parked').innerText = activeList.length;
+    document.getElementById('stat-departed').innerText = historyList.length;
+    document.getElementById('stat-total-visits').innerText = totalVisitsCount;
+
+    const targetList = currentTab === 'active' ? activeList : historyList;
+    const filteredList = targetList.filter(t => {
+      if (!searchTerm) return true;
+      return (
+        (t.plate && t.plate.toLowerCase().includes(searchTerm)) ||
+        (t.spot && t.spot.toLowerCase().includes(searchTerm)) ||
+        (t.details && t.details.toLowerCase().includes(searchTerm)) ||
+        (t.notes && t.notes.toLowerCase().includes(searchTerm)) ||
+        (t.entryDate && t.entryDate.includes(searchTerm)) ||
+        (t.exitDate && t.exitDate.includes(searchTerm))
+      );
     });
 
-    // Check Out Truck
-    function checkOut(id) {
-      const index = activeTrucks.findIndex(t => t.id === id);
-      if (index !== -1) {
-        const truck = activeTrucks.splice(index, 1)[0];
-        truck.exitTime = Date.now();
-        truck.durationMs = truck.exitTime - truck.entryTime;
-        completedStays.unshift(truck);
-        saveData();
-        renderTables();
-      }
+    const emptyState = document.getElementById('emptyState');
+    if (filteredList.length === 0) {
+      emptyState.style.display = 'block';
+      document.getElementById('emptyStateText').innerText = searchTerm 
+        ? `No results match "${searchTerm}"` 
+        : "No records found in this category.";
+    } else {
+      emptyState.style.display = 'none';
     }
 
-    // Render Active and History Tables
-    function renderTables() {
-      activeCount.textContent = activeTrucks.length;
+    filteredList.forEach(truck => {
+      const days = calculateDays(truck.entryDate, truck.exitDate);
+      let badgeClass = 'days-badge' + (days > 7 ? ' danger' : days > 3 ? ' warning' : '');
 
-      // Active Table
-      if (activeTrucks.length === 0) {
-        activeTableBody.innerHTML = `<tr><td colspan="5" class="empty-msg">No active trucks parked.</td></tr>`;
-      } else {
-        activeTableBody.innerHTML = activeTrucks.map(truck => {
-          const duration = formatDuration(Date.now() - truck.entryTime);
-          return `
-            <tr>
-              <td><strong>${truck.plate}</strong></td>
-              <td>${truck.driver}</td>
-              <td>${formatTime(truck.entryTime)}</td>
-              <td><span class="badge-active">${duration}</span></td>
-              <td>
-                <button class="btn-danger" onclick="checkOut('${truck.id}')">Check Out</button>
-              </td>
-            </tr>
-          `;
-        }).join('');
-      }
+      const card = document.createElement('div');
+      card.className = 'truck-card';
+      card.innerHTML = `
+        <div class="truck-card-header">
+          <span class="spot-tag"><i class="fa-solid fa-location-dot" style="color:var(--primary)"></i> Spot: ${escapeHtml(truck.spot)}</span>
+          <span class="plate-tag">${escapeHtml(truck.plate)}</span>
+        </div>
+        <div class="truck-card-body">
+          <div><span>Entry Date:</span> <strong>${truck.entryDate}</strong></div>
+          ${truck.exitDate ? `<div><span>Exit Date:</span> <strong>${truck.exitDate}</strong></div>` : ''}
+          <div><span>Duration:</span> <span class="${badgeClass}">${currentTab === 'active' ? 'Day ' + days : days + ' Days'}</span></div>
+          <div><span>Details:</span> <strong>${escapeHtml(truck.details || 'N/A')}</strong></div>
+          ${truck.notes ? `<div><span>Notes:</span> <strong>${escapeHtml(truck.notes)}</strong></div>` : ''}
+        </div>
+        <div class="truck-card-actions">
+          <button class="btn btn-outline btn-sm" onclick="showTruckHistory('${truck.plate}')"><i class="fa-solid fa-clock-rotate-left"></i> History</button>
+          ${currentTab === 'active' ? `<button class="btn btn-outline btn-sm" onclick="openCheckout('${truck.id}')"><i class="fa-solid fa-arrow-right-from-bracket"></i> Exit</button>` : ''}
+          <button class="btn btn-outline btn-sm" style="color:var(--accent-red)" onclick="openDelete('${truck.id}')"><i class="fa-solid fa-trash"></i></button>
+        </div>
+      `;
+      container.appendChild(card);
+    });
+  }
 
-      // History Table
-      if (completedStays.length === 0) {
-        historyTableBody.innerHTML = `<tr><td colspan="5" class="empty-msg">No departure history yet.</td></tr>`;
-      } else {
-        historyTableBody.innerHTML = completedStays.map(truck => `
-          <tr>
-            <td><strong>${truck.plate}</strong></td>
-            <td>${truck.driver}</td>
-            <td>${formatTime(truck.entryTime)}</td>
-            <td>${formatTime(truck.exitTime)}</td>
-            <td><strong>${formatDuration(truck.durationMs)}</strong></td>
-          </tr>
-        `).join('');
-      }
-    }
+  window.showTruckHistory = function(plate) {
+    const visits = trucks.filter(t => t.plate === plate).sort((a,b) => new Date(b.entryDate) - new Date(a.entryDate));
+    const container = document.getElementById('historyTimelineContainer');
+    document.getElementById('historyPlateTitle').innerText = plate;
+    container.innerHTML = '';
 
-    // Update active durations every 30 seconds
-    setInterval(renderTables, 30000);
+    visits.forEach(v => {
+      const days = calculateDays(v.entryDate, v.exitDate);
+      const isCurrent = v.status === 'active';
+      const div = document.createElement('div');
+      div.className = 'history-card';
+      div.innerHTML = `
+        <div>
+          <strong style="color: ${isCurrent ? 'var(--accent-green)' : 'var(--text-main)'}">
+            ${isCurrent ? '🟢 Active Stay' : '⚪ Completed Stay'}
+          </strong>
+          <div style="font-size:0.8rem; color:var(--text-muted); margin-top:4px;">
+            In: <strong>${v.entryDate}</strong> | Out: <strong>${v.exitDate || 'Parked Now'}</strong>
+          </div>
+        </div>
+        <span class="days-badge ${isCurrent ? '' : 'warning'}">${days} Days</span>
+      `;
+      container.appendChild(div);
+    });
 
-    // Initial Render
-    renderTables();
-  </script>
+    document.getElementById('historyModal').classList.add('active');
+  };
+
+  window.openCheckout = function(id) {
+    const truck = trucks.find(t => t.id === id);
+    if (!truck) return;
+    targetActionId = id;
+    document.getElementById('modalPlate').innerText = truck.plate;
+    document.getElementById('modalDays').innerText = calculateDays(truck.entryDate) + ' Days';
+    document.getElementById('checkoutModal').classList.add('active');
+  };
+
+  window.openDelete = function(id) {
+    const truck = trucks.find(t => t.id === id);
+    if (!truck) return;
+    targetActionId = id;
+    document.getElementById('deletePlate').innerText = truck.plate;
+    document.getElementById('deleteModal').classList.add('active');
+  };
+
+  window.closeModal = function(modalId) {
+    document.getElementById(modalId).classList.remove('active');
+  };
+
+  document.getElementById('confirmCheckoutBtn').addEventListener('click', async function() {
+    if (!targetActionId) return;
+    closeModal('checkoutModal');
+    const docRef = doc(db, "trucks", targetActionId);
+    await updateDoc(docRef, { status: 'history', exitDate: getFormattedDate(0) });
+  });
+
+  document.getElementById('confirmDeleteBtn').addEventListener('click', async function() {
+    if (!targetActionId) return;
+    closeModal('deleteModal');
+    const docRef = doc(db, "trucks", targetActionId);
+    await deleteDoc(docRef);
+  });
+
+  window.exportData = function() {
+    let csv = "data:text/csv;charset=utf-8,Spot,Plate Number,Entry Date,Exit Date,Status,Days Parked,Details,Notes\n";
+    trucks.forEach(t => {
+      csv += `"${t.spot}","${t.plate}","${t.entryDate}","${t.exitDate || ''}","${t.status}","${calculateDays(t.entryDate, t.exitDate)}","${t.details || ''}","${t.notes || ''}"\n`;
+    });
+    const link = document.createElement("a");
+    link.href = encodeURI(csv);
+    link.download = `truck_parking_export_${getFormattedDate(0)}.csv`;
+    link.click();
+  };
+
+  function escapeHtml(str) { return str ? str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;") : ''; }
+</script>
 </body>
-</html>
+  </html>
